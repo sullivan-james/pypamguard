@@ -31,7 +31,7 @@ class StandardModule(GenericModule):
         super().__init__(file_header, module_header, filters, *args, **kwargs)
         self.millis: int = None
         self.date: datetime.datetime = None
-        self.flags: Bitmap = None
+        self.flag_bitmap: Bitmap = None
         self.time_ns: int = None
         self.channel_map: Bitmap = None
         self.uid: int = None
@@ -52,13 +52,16 @@ class StandardModule(GenericModule):
         self.date = datetime.datetime.fromtimestamp(self.millis / 1000, datetime.UTC)
         self._filters.filter('daterange', self.date)
 
-        self.flag_bitmap = BitmapBinaryReader(INTS.SHORT, DATA_FLAG_FIELDS, var_name='flag_bitmap').process(data)
+        if self._file_header.file_format >= 3:
+            self.flag_bitmap = BitmapBinaryReader(INTS.SHORT, DATA_FLAG_FIELDS, var_name='flag_bitmap').process(data)
+        else: return # TODO: this should change. Waiting on issue #2 to be resolved
+        
         set_flags = self.flag_bitmap.get_set_bits()
         
-        if "TIMENANOSECONDS" in set_flags:
+        if self._file_header.file_format == 2 or "TIMENANOSECONDS" in set_flags:
             self.time_ns = NumericalBinaryReader(INTS.LONG, var_name='time_ns').process(data)
         
-        if "CHANNELMAP" in set_flags:
+        if self._file_header.file_format == 2 or "CHANNELMAP" in set_flags:
             self.channel_map = BitmapBinaryReader(INTS.INT, var_name='channel_map').process(data)
         
         if "UID" in set_flags:

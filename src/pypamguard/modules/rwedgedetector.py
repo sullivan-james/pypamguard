@@ -11,11 +11,11 @@ class RWEdgeDetector(StandardModule):
         self.noise: float = None
         self.n_slices: int = None
 
-        self.slice_list: list[int] = []
-        self.low_freq: list[int] = []
-        self.peak_freq: list[int] = []
-        self.high_freq: list[int] = []
-        self.peak_amp: list[int] = []
+        self.slice_list: np.ndarray = None
+        self.low_freq: np.ndarray = None
+        self.peak_freq: np.ndarray = None
+        self.high_freq: np.ndarray = None
+        self.peak_amp: np.ndarray = None
     
     def process(self, data, chunk_info):
         super().process(data, chunk_info)
@@ -25,10 +25,17 @@ class RWEdgeDetector(StandardModule):
         self.noise = NumericalBinaryReader(FLOATS.FLOAT, var_name='noise').process(data)
         NumericalBinaryReader(INTS.INT).process(data)
         self.n_slices = NumericalBinaryReader(INTS.SHORT, var_name='n_slices').process(data)
-        for _ in range(self.n_slices):
-            self.slice_list.append(NumericalBinaryReader(INTS.SHORT, var_name='slice_list').process(data))
-            self.low_freq.append(NumericalBinaryReader(INTS.SHORT, var_name='low_freq').process(data))
-            self.peak_freq.append(NumericalBinaryReader(INTS.SHORT, var_name='peak_freq').process(data))
-            self.high_freq.append(NumericalBinaryReader(INTS.SHORT, var_name='high_freq').process(data))
-            self.peak_amp.append(NumericalBinaryReader(FLOATS.FLOAT, var_name='peak_amp').process(data))
+
+        self.slice_list = np.zeros(self.n_slices, dtype=np.int16)
+        self.low_freq = np.zeros(self.n_slices, dtype=np.int16)
+        self.peak_freq = np.zeros(self.n_slices, dtype=np.int16)
+        self.high_freq = np.zeros(self.n_slices, dtype=np.int16)
+        self.peak_amp = np.zeros(self.n_slices, dtype=np.float32)
+
+        for i in range(self.n_slices):
+            self.slice_list[i] = NumericalBinaryReader(INTS.SHORT, var_name='slice_list').process(data)
+            self.low_freq[i] = NumericalBinaryReader(INTS.SHORT, var_name='low_freq').process(data)
+            self.peak_freq[i] = NumericalBinaryReader(INTS.SHORT, var_name='peak_freq').process(data)
+            self.high_freq[i] = NumericalBinaryReader(INTS.SHORT, var_name='high_freq').process(data)
+            self.peak_amp[i] = NumericalBinaryReader(FLOATS.FLOAT, var_name='peak_amp').process(data)
         
